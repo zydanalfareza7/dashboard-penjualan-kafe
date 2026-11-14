@@ -62,6 +62,12 @@ def inject_custom_css():
     st.markdown(
         """
         <style>
+        /* Sembunyikan toolbar kanan atas (Fork/GitHub/Menu) agar tampilan lebih bersih */
+        [data-testid="stToolbar"], #MainMenu {
+            visibility: hidden;
+            height: 0;
+        }
+
         /* Hero header */
         .hero-card {
             background: linear-gradient(135deg, #3E2723 0%, #6F4E37 55%, #A67B5B 100%);
