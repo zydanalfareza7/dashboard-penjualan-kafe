@@ -52,14 +52,18 @@ Secara default (jika Google Sheets belum disambungkan), aplikasi membaca data ca
 
 ---
 
-## 3. Cara Hosting Gratis Online (Hugging Face Spaces)
+## 3. Cara Hosting Gratis Online (Streamlit Community Cloud)
 
-> **Catatan:** Hosting gratis seperti InfinityFree tidak bisa menjalankan Python/TensorFlow. Gunakan **Hugging Face Spaces** (gratis dengan RAM 16 GB).
+> **Catatan:** Hosting gratis seperti InfinityFree tidak bisa menjalankan Python/TensorFlow, sedangkan Hugging Face Spaces untuk compute/Docker kini memerlukan paket PRO. Gunakan **Streamlit Community Cloud** (`share.streamlit.io`) yang gratis dan terhubung langsung dengan GitHub!
 
-1. Buat akun di [huggingface.co](https://huggingface.co), lalu klik **New Space**.
-2. Isi nama Space, pilih **SDK: Streamlit**, lalu klik **Create Space**.
-3. Upload semua file dari repo ini (kecuali `.venv/`, `service_account.json`, `gsheet_config.json`).
-4. Masuk ke menu **Settings → Variables and secrets** di Space tersebut, lalu tambahkan **New secret**:
-   - `GSHEET_URL` → isi dengan URL Google Sheet kamu.
-   - `GCP_SERVICE_ACCOUNT_JSON` → salin-tempel seluruh isi file `.json` Service Account.
-5. Tunggu proses build selesai, dan dashboard siap diakses lewat link publik!
+1. Buka [share.streamlit.io](https://share.streamlit.io) dan login dengan akun **GitHub**.
+2. Klik **Create app** → pilih **Deploy a public app from GitHub** (atau hubungkan repo Private Anda).
+3. Pilih repository: `zydanalfareza7/dashboard-penjualan-kafe`, branch `main`, dan Main file path: `app.py`.
+4. Klik **Advanced settings → Secrets** dan masukkan konfigurasi Google Sheets Anda:
+   ```toml
+   gsheet_url = "https://docs.google.com/spreadsheets/d/..."
+
+   [gcp_service_account]
+   # salin-tempel isi JSON service account dalam format TOML
+   ```
+5. Klik **Deploy!** dan tunggu proses instalasi selesai hingga mendapatkan link publik `*.streamlit.app`.
