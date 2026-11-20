@@ -299,15 +299,60 @@ def inject_custom_css():
 
         /* Sidebar */
         [data-testid="stSidebar"] {
-            background-color: #F5EFE8;
-            border-right: 1px solid #E5D9CC;
+            background-color: #F4EDE4;
+            border-right: 1px solid #E2D4C3;
+        }
+        [data-testid="stSidebar"] .block-container,
+        [data-testid="stSidebarUserContent"] {
+            padding-top: 1.1rem !important;
+        }
+        .sidebar-brand {
+            background: linear-gradient(135deg, #2D1B14 0%, #6F4E37 100%);
+            color: #FFFDF9;
+            padding: 1rem 1.1rem;
+            border-radius: 14px;
+            margin-bottom: 0.85rem;
+            box-shadow: 0 6px 16px rgba(45, 27, 20, 0.14);
+        }
+        .sidebar-brand-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+        .sidebar-brand-sub {
+            font-size: 0.76rem;
+            opacity: 0.85;
+            margin-top: 0.2rem;
         }
         [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #FFFFFF;
             border: 1px solid #E6DCD1 !important;
             border-radius: 14px !important;
-            padding: 0.35rem 0.45rem !important;
-            box-shadow: 0 2px 8px rgba(44, 30, 22, 0.03);
+            padding: 0.45rem 0.55rem !important;
+            box-shadow: 0 3px 10px rgba(44, 30, 22, 0.035);
+            transition: box-shadow 0.2s ease;
+        }
+        [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"]:hover {
+            box-shadow: 0 5px 14px rgba(44, 30, 22, 0.07);
+        }
+        [data-testid="stSidebar"] [data-testid="stBaseButton-pills"] {
+            background-color: #FAF6F1 !important;
+            border: 1px solid #E2D4C3 !important;
+            color: #5C493E !important;
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+            transition: all 0.15s ease !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stBaseButton-pillsActive"] {
+            background-color: #6F4E37 !important;
+            border: 1px solid #6F4E37 !important;
+            color: #FFFFFF !important;
+            border-radius: 999px !important;
+            font-weight: 700 !important;
+            font-size: 0.8rem !important;
+            box-shadow: 0 2px 8px rgba(111, 78, 55, 0.25) !important;
         }
         .sidebar-title {
             font-size: 1.08rem;
@@ -720,13 +765,24 @@ periode_order = list(sales["Batch"].astype(str).radd("B") + "-M" + sales["Minggu
 # ---- Sidebar Filter ------------------------------------------------------
 all_batches = sorted(long["Batch"].unique())
 with st.sidebar:
-    st.markdown('<div class="sidebar-title">☕ Kontrol Dashboard</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sidebar-caption">Atur sumber data & filter analisis</div>',
+        """
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-title">☕ Kontrol Dashboard</div>
+            <div class="sidebar-brand-sub">Filter metrik, batch &amp; menu kopi</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
-    if st.button("🔄 Refresh Data", use_container_width=True, type="primary"):
+
+    sb1, sb2 = st.columns(2)
+    if sb1.button("🔄 Refresh", use_container_width=True, type="primary"):
         st.cache_data.clear()
+        st.rerun()
+    if sb2.button("↺ Reset", use_container_width=True):
+        st.session_state["f_metrik"] = "Qty"
+        st.session_state["f_batch"] = all_batches
+        st.session_state["f_produk"] = PRODUK
         st.rerun()
 
     with st.container(border=True):
@@ -736,6 +792,7 @@ with st.sidebar:
             list(METRIK),
             selection_mode="single",
             default="Qty",
+            key="f_metrik",
             format_func=lambda m: {"Qty": "Qty (cup)", "Omzet": "Omzet", "Laba": "Laba"}[m],
             label_visibility="collapsed",
         )
@@ -749,6 +806,7 @@ with st.sidebar:
             all_batches,
             selection_mode="multi",
             default=all_batches,
+            key="f_batch",
             format_func=lambda b: f"Batch {b}",
             label_visibility="collapsed",
         )
@@ -762,6 +820,7 @@ with st.sidebar:
             PRODUK,
             selection_mode="multi",
             default=PRODUK,
+            key="f_produk",
             label_visibility="collapsed",
         )
         if not produk_sel:
@@ -770,7 +829,7 @@ with st.sidebar:
     st.markdown(
         f"""
         <div class="sidebar-summary">
-            Menampilkan <b>{len(batch_sel)}/{len(all_batches)} Batch</b> · <b>{len(produk_sel)}/{len(PRODUK)} Produk</b>
+            <b>{len(batch_sel)}/{len(all_batches)}</b> Batch · <b>{len(produk_sel)}/{len(PRODUK)}</b> Produk
         </div>
         """,
         unsafe_allow_html=True,
