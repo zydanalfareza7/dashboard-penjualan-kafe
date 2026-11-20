@@ -1,9 +1,8 @@
 """
 Helper integrasi Google Sheets (baca & tulis) untuk Dashboard Penjualan Kafe.
-Mendukung konfigurasi via:
-  1. st.secrets ("gcp_service_account" + "gsheet_url") -> Streamlit Cloud / lokal
-  2. Environment variable ("GCP_SERVICE_ACCOUNT_JSON" + "GSHEET_URL") -> Hugging Face Spaces
-  3. File lokal ("service_account.json" + "gsheet_config.json") -> Setup langsung dari UI
+Mendukung 2 mode koneksi:
+  1. Google Apps Script Web App URL (PALING SIMPEL - tanpa Google Cloud / JSON)
+  2. Service Account JSON (st.secrets / env / file lokal) -> opsional
 """
 import json
 import os
@@ -12,6 +11,7 @@ from typing import Optional, Tuple
 
 import gspread
 import pandas as pd
+import requests
 from google.oauth2.service_account import Credentials
 
 SCOPES = [
@@ -23,41 +23,80 @@ BASE_DIR = Path(__file__).parent
 LOCAL_SA_FILE = BASE_DIR / "service_account.json"
 LOCAL_CFG_FILE = BASE_DIR / "gsheet_config.json"
 
+APPS_SCRIPT_TEMPLATE = """function doGet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sPenjualan = ss.getSheetByName("Penjualan");
+  var sMenu = ss.getSheetByName("Menu");
+  return ContentService.createTextOutput(JSON.stringify({
+    penjualan: sPenjualan ? sPenjualan.getDataRange().getValues() : [],
+    menu: sMenu ? sMenu.getDataRange().getValues() : []
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  function getOrCreate(name) {
+    return ss.getSheetByName(name) || ss.insertSheet(name);
+  }
+
+  if (data.action === "write_all") {
+    var s1 = getOrCreate("Penjualan");
+    s1.clearContents();
+    if (data.penjualan && data.penjualan.length > 0) {
+      s1.getRange(1, 1, data.penjualan.length, data.penjualan[0].length).setValues(data.penjualan);
+    }
+    var s2 = getOrCreate("Menu");
+    s2.clearContents();
+    if (data.menu && data.menu.length > 0) {
+      s2.getRange(1, 1, data.menu.length, data.menu[0].length).setValues(data.menu);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({status: "ok"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}"""
+
+
+def is_apps_script_url(url: Optional[str]) -> bool:
+    return bool(url and "script.google.com" in url)
+
 
 def get_gsheet_config(st_secrets=None) -> Tuple[Optional[dict], Optional[str]]:
-    """Ambil kredensial service account & URL Google Sheet dari secrets, env, atau file lokal."""
+    """Ambil URL Apps Script / Google Sheet & kredensial opsional dari secrets, env, atau file lokal."""
     sa_info = None
     sheet_url = None
 
-    # 1. Streamlit secrets
     if st_secrets is not None:
         try:
+            if "apps_script_url" in st_secrets:
+                sheet_url = str(st_secrets["apps_script_url"]).strip()
+            elif "gsheet_url" in st_secrets:
+                sheet_url = str(st_secrets["gsheet_url"]).strip()
             if "gcp_service_account" in st_secrets:
                 sa_info = dict(st_secrets["gcp_service_account"])
-            if "gsheet_url" in st_secrets:
-                sheet_url = str(st_secrets["gsheet_url"]).strip()
         except Exception:
             pass
 
-    # 2. Environment variables (cocok untuk Hugging Face Spaces / Docker)
+    if not sheet_url and os.environ.get("APPS_SCRIPT_URL"):
+        sheet_url = os.environ["APPS_SCRIPT_URL"].strip()
+    if not sheet_url and os.environ.get("GSHEET_URL"):
+        sheet_url = os.environ["GSHEET_URL"].strip()
     if sa_info is None and os.environ.get("GCP_SERVICE_ACCOUNT_JSON"):
         try:
             sa_info = json.loads(os.environ["GCP_SERVICE_ACCOUNT_JSON"])
         except Exception:
             pass
-    if not sheet_url and os.environ.get("GSHEET_URL"):
-        sheet_url = os.environ["GSHEET_URL"].strip()
 
-    # 3. File lokal di folder project
-    if sa_info is None and LOCAL_SA_FILE.exists():
-        try:
-            sa_info = json.loads(LOCAL_SA_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            pass
     if not sheet_url and LOCAL_CFG_FILE.exists():
         try:
             cfg = json.loads(LOCAL_CFG_FILE.read_text(encoding="utf-8"))
             sheet_url = str(cfg.get("gsheet_url", "")).strip() or None
+        except Exception:
+            pass
+    if sa_info is None and LOCAL_SA_FILE.exists():
+        try:
+            sa_info = json.loads(LOCAL_SA_FILE.read_text(encoding="utf-8"))
         except Exception:
             pass
 
@@ -65,7 +104,7 @@ def get_gsheet_config(st_secrets=None) -> Tuple[Optional[dict], Optional[str]]:
 
 
 def save_local_config(sa_json_bytes: Optional[bytes], sheet_url: str) -> None:
-    """Simpan konfigurasi Google Sheets secara lokal agar tidak perlu input ulang."""
+    """Simpan konfigurasi secara lokal agar tidak perlu input ulang."""
     if sa_json_bytes:
         LOCAL_SA_FILE.write_bytes(sa_json_bytes)
     if sheet_url:
@@ -75,26 +114,11 @@ def save_local_config(sa_json_bytes: Optional[bytes], sheet_url: str) -> None:
         )
 
 
-def connect_spreadsheet(sa_info: dict, sheet_url: str) -> gspread.Spreadsheet:
-    """Buat koneksi gspread ke Google Spreadsheet target."""
-    creds = Credentials.from_service_account_info(sa_info, scopes=SCOPES)
-    client = gspread.authorize(creds)
-    if sheet_url.startswith("http"):
-        return client.open_by_url(sheet_url)
-    return client.open_by_key(sheet_url)
-
-
-def _get_or_create_ws(sh: gspread.Spreadsheet, title: str, rows: int = 200, cols: int = 20):
-    try:
-        return sh.worksheet(title)
-    except gspread.WorksheetNotFound:
-        return sh.add_worksheet(title=title, rows=rows, cols=cols)
-
-
-def read_gsheet_tables(sh: gspread.Spreadsheet, parse_penjualan_fn, parse_menu_fn):
-    """Baca sheet Penjualan & Menu dari Google Sheets (mendukung format datar maupun format blok)."""
-    ws_sales = sh.worksheet("Penjualan")
-    raw_sales = pd.DataFrame(ws_sales.get_all_values())
+# --------------------------------------------------------------------------
+# Mode 1: Google Apps Script (Tanpa Google Cloud / JSON)
+# --------------------------------------------------------------------------
+def _parse_tables(raw_sales_rows, raw_menu_rows, parse_penjualan_fn, parse_menu_fn):
+    raw_sales = pd.DataFrame(raw_sales_rows)
     if raw_sales.empty:
         raise ValueError('Sheet "Penjualan" di Google Sheets masih kosong.')
 
@@ -113,8 +137,7 @@ def read_gsheet_tables(sh: gspread.Spreadsheet, parse_penjualan_fn, parse_menu_f
         sales = parse_penjualan_fn(raw_sales)
         produk = [c for c in sales.columns if c not in ("Batch", "Minggu")]
 
-    ws_menu = sh.worksheet("Menu")
-    raw_menu = pd.DataFrame(ws_menu.get_all_values())
+    raw_menu = pd.DataFrame(raw_menu_rows)
     if raw_menu.empty:
         raise ValueError('Sheet "Menu" di Google Sheets masih kosong.')
 
@@ -132,8 +155,59 @@ def read_gsheet_tables(sh: gspread.Spreadsheet, parse_penjualan_fn, parse_menu_f
     return sales, menu
 
 
+def read_apps_script_tables(script_url: str, parse_penjualan_fn, parse_menu_fn):
+    resp = requests.get(script_url, timeout=20)
+    resp.raise_for_status()
+    payload = resp.json()
+    return _parse_tables(
+        payload.get("penjualan", []),
+        payload.get("menu", []),
+        parse_penjualan_fn,
+        parse_menu_fn,
+    )
+
+
+def write_apps_script_tables(script_url: str, sales_df: pd.DataFrame, menu_df: pd.DataFrame) -> None:
+    clean_sales = sales_df.drop(columns=["Minggu ke"], errors="ignore").copy()
+    payload = {
+        "action": "write_all",
+        "penjualan": [clean_sales.columns.tolist()] + clean_sales.fillna(0).values.tolist(),
+        "menu": [menu_df.columns.tolist()] + menu_df.fillna(0).values.tolist(),
+    }
+    resp = requests.post(script_url, json=payload, timeout=25)
+    resp.raise_for_status()
+
+
+# --------------------------------------------------------------------------
+# Mode 2: Service Account JSON (gspread)
+# --------------------------------------------------------------------------
+def connect_spreadsheet(sa_info: dict, sheet_url: str) -> gspread.Spreadsheet:
+    creds = Credentials.from_service_account_info(sa_info, scopes=SCOPES)
+    client = gspread.authorize(creds)
+    if sheet_url.startswith("http"):
+        return client.open_by_url(sheet_url)
+    return client.open_by_key(sheet_url)
+
+
+def _get_or_create_ws(sh: gspread.Spreadsheet, title: str, rows: int = 200, cols: int = 20):
+    try:
+        return sh.worksheet(title)
+    except gspread.WorksheetNotFound:
+        return sh.add_worksheet(title=title, rows=rows, cols=cols)
+
+
+def read_gsheet_tables(sh: gspread.Spreadsheet, parse_penjualan_fn, parse_menu_fn):
+    ws_sales = sh.worksheet("Penjualan")
+    ws_menu = sh.worksheet("Menu")
+    return _parse_tables(
+        ws_sales.get_all_values(),
+        ws_menu.get_all_values(),
+        parse_penjualan_fn,
+        parse_menu_fn,
+    )
+
+
 def write_full_tables(sh: gspread.Spreadsheet, sales_df: pd.DataFrame, menu_df: pd.DataFrame) -> None:
-    """Tulis ulang seluruh tabel Penjualan & Menu dalam format datar yang rapi ke Google Sheets."""
     ws_sales = _get_or_create_ws(sh, "Penjualan")
     clean_sales = sales_df.drop(columns=["Minggu ke"], errors="ignore").copy()
     ws_sales.clear()
@@ -150,16 +224,13 @@ def write_full_tables(sh: gspread.Spreadsheet, sales_df: pd.DataFrame, menu_df: 
     )
 
 
-def upsert_sales_row(
-    sh: gspread.Spreadsheet,
+def build_upserted_sales_df(
     batch: int,
     minggu: int,
     qty_map: dict,
     produk_list: list,
     current_sales_df: pd.DataFrame,
-    current_menu_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Tambah atau perbarui 1 baris data penjualan (Batch + Minggu) lalu simpan ke Google Sheets."""
     df = current_sales_df.drop(columns=["Minggu ke"], errors="ignore").copy()
     new_row = {"Batch": int(batch), "Minggu": int(minggu)}
     for p in produk_list:
@@ -172,6 +243,4 @@ def upsert_sales_row(
     else:
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
-    df = df.sort_values(["Batch", "Minggu"]).reset_index(drop=True)
-    write_full_tables(sh, df, current_menu_df)
-    return df
+    return df.sort_values(["Batch", "Minggu"]).reset_index(drop=True)

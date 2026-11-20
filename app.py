@@ -21,11 +21,15 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from gsheets_helper import (
+    APPS_SCRIPT_TEMPLATE,
+    build_upserted_sales_df,
     connect_spreadsheet,
     get_gsheet_config,
+    is_apps_script_url,
+    read_apps_script_tables,
     read_gsheet_tables,
     save_local_config,
-    upsert_sales_row,
+    write_apps_script_tables,
     write_full_tables,
 )
 
@@ -385,10 +389,21 @@ def baca_excel(path: str, mtime: float):
 
 @st.cache_data(ttl=60, show_spinner=False)
 def baca_gsheet_cached(sheet_url: str, sa_client_email: str):
-    """Baca data dari Google Sheets dengan cache 60 detik."""
+    """Baca data dari Google Sheets (Apps Script atau Service Account) dengan cache 60 detik."""
+    if is_apps_script_url(sheet_url):
+        return read_apps_script_tables(sheet_url, parse_penjualan, parse_menu)
     sa_info, _ = get_gsheet_config(st.secrets)
     sh = connect_spreadsheet(sa_info, sheet_url)
     return read_gsheet_tables(sh, parse_penjualan, parse_menu)
+
+
+def simpan_tabel_gsheet(sa_info, sheet_url: str, sales_df: pd.DataFrame, menu_df: pd.DataFrame):
+    """Simpan tabel Penjualan & Menu ke Google Sheets via Apps Script atau Service Account."""
+    if is_apps_script_url(sheet_url):
+        write_apps_script_tables(sheet_url, sales_df, menu_df)
+    else:
+        sh = connect_spreadsheet(sa_info, sheet_url)
+        write_full_tables(sh, sales_df, menu_df)
 
 
 def muat_data():
@@ -396,9 +411,10 @@ def muat_data():
     sa_info, sheet_url = get_gsheet_config(st.secrets)
     gsheet_err = None
 
-    if sa_info and sheet_url:
+    if sheet_url and (is_apps_script_url(sheet_url) or sa_info):
         try:
-            sales, menu = baca_gsheet_cached(sheet_url, sa_info.get("client_email", ""))
+            email = sa_info.get("client_email", "") if sa_info else "apps_script"
+            sales, menu = baca_gsheet_cached(sheet_url, email)
             return sales, menu, "gsheet", None
         except Exception as e:
             gsheet_err = str(e)
@@ -550,7 +566,7 @@ tab_ringkas, tab_tren, tab_komposisi, tab_dl, tab_data = st.tabs(
 # ---- Tab Input & Data ----------------------------------------------------
 with tab_data:
     sa_info, sheet_url = get_gsheet_config(st.secrets)
-    gsheet_ready = bool(sa_info and sheet_url)
+    gsheet_ready = bool(sheet_url and (is_apps_script_url(sheet_url) or sa_info))
 
     st.subheader("➕ Input Data Penjualan Mingguan")
     if gsheet_ready:
@@ -592,16 +608,14 @@ with tab_data:
         if submitted and gsheet_ready:
             with st.spinner("Menyimpan data ke Google Sheets..."):
                 try:
-                    sh = connect_spreadsheet(sa_info, sheet_url)
-                    upsert_sales_row(
-                        sh=sh,
+                    updated_sales = build_upserted_sales_df(
                         batch=int(in_batch),
                         minggu=int(in_minggu),
                         qty_map=qty_inputs,
                         produk_list=PRODUK,
                         current_sales_df=df_sales,
-                        current_menu_df=df_menu,
                     )
+                    simpan_tabel_gsheet(sa_info, sheet_url, updated_sales, df_menu)
                     st.cache_data.clear()
                     st.success(
                         f"Berhasil menyimpan **Batch {int(in_batch)} - Minggu {int(in_minggu)}** ke Google Sheets!"
@@ -613,27 +627,35 @@ with tab_data:
     st.divider()
 
     # Pengaturan & Migrasi Google Sheets
-    with st.expander("☁️ Pengaturan & Koneksi Google Sheets", expanded=not gsheet_ready):
+    with st.expander("☁️ Pengaturan & Koneksi Google Sheets (Tanpa Google Cloud)", expanded=not gsheet_ready):
         st.markdown(
             """
-            **Cara menghubungkan Google Sheets (cukup 1 kali):**
-            1. Buat Google Sheet baru di Google Drive, lalu salin URL-nya.
-            2. Buat **Service Account** di Google Cloud Console (aktifkan *Google Sheets API* & *Google Drive API*), unduh file JSON-nya.
-            3. **Share** Google Sheet Anda ke alamat `client_email` yang ada di file JSON tersebut sebagai **Editor**.
-            4. Masukkan URL & unggah file JSON di bawah ini (untuk hosting, gunakan `st.secrets` atau Environment Variable `GCP_SERVICE_ACCOUNT_JSON` & `GSHEET_URL`).
+            **Cara termudah menghubungkan Google Sheets (1 menit, tanpa Google Cloud/JSON):**
+            1. Buka Google Sheet Anda → klik menu **Extensions (Ekstensi) → Apps Script**.
+            2. Hapus kode bawaan, lalu **salin-tempel** kode di bawah ini dan klik **Save**:
+            """
+        )
+        st.code(APPS_SCRIPT_TEMPLATE, language="javascript")
+        st.markdown(
+            """
+            3. Klik **Deploy → New deployment → Select type: Web app** → atur **Who has access: Anyone** → klik **Deploy** (izinkan akses saat diminta).
+            4. Salin **Web app URL** (`https://script.google.com/macros/s/.../exec`) lalu tempel di bawah ini (atau simpan permanen di **Streamlit Secrets** dengan kunci `apps_script_url = "..."`).
             """
         )
         cfg_url = st.text_input(
-            "URL atau ID Google Sheet",
+            "Web App URL (Apps Script) atau URL Google Sheet",
             value=sheet_url or "",
-            placeholder="https://docs.google.com/spreadsheets/d/...",
+            placeholder="https://script.google.com/macros/s/.../exec",
         )
-        cfg_file = st.file_uploader("Upload file Service Account (.json)", type=["json"])
+        cfg_file = st.file_uploader(
+            "Opsional: Upload file Service Account (.json) jika tidak pakai Apps Script",
+            type=["json"],
+        )
 
         col_save, col_mig = st.columns(2)
         if col_save.button("🔗 Simpan Konfigurasi Google Sheets", use_container_width=True):
             if not cfg_url.strip():
-                st.warning("Masukkan URL Google Sheet terlebih dahulu.")
+                st.warning("Masukkan Web App URL terlebih dahulu.")
             else:
                 sa_bytes = cfg_file.read() if cfg_file is not None else None
                 save_local_config(sa_bytes, cfg_url.strip())
@@ -648,8 +670,7 @@ with tab_data:
         ):
             with st.spinner("Mengunggah tabel Penjualan & Menu ke Google Sheets..."):
                 try:
-                    sh = connect_spreadsheet(sa_info, sheet_url)
-                    write_full_tables(sh, df_sales, df_menu)
+                    simpan_tabel_gsheet(sa_info, sheet_url, df_sales, df_menu)
                     st.cache_data.clear()
                     st.success("Data Penjualan & Menu berhasil disalin ke Google Sheets!")
                     st.rerun()
@@ -672,10 +693,9 @@ with tab_data:
     if gsheet_ready and st.button("💾 Simpan Perubahan Tabel ke Google Sheet"):
         with st.spinner("Memperbarui Google Sheets..."):
             try:
-                sh = connect_spreadsheet(sa_info, sheet_url)
                 clean_s = sales_in.dropna(subset=["Batch", "Minggu"]).copy()
                 clean_s[PRODUK] = clean_s[PRODUK].fillna(0)
-                write_full_tables(sh, clean_s, menu_in.fillna(0))
+                simpan_tabel_gsheet(sa_info, sheet_url, clean_s, menu_in.fillna(0))
                 st.cache_data.clear()
                 st.success("Semua perubahan tabel berhasil disimpan ke Google Sheets!")
                 st.rerun()
