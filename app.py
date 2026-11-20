@@ -600,7 +600,7 @@ with tab_data:
             )
 
         submitted = st.form_submit_button(
-            "💾 Simpan ke Google Sheet",
+            "💾 Simpan",
             type="primary",
             disabled=not gsheet_ready,
             use_container_width=True,
@@ -626,59 +626,6 @@ with tab_data:
 
     st.divider()
 
-    # Pengaturan & Migrasi Google Sheets
-    with st.expander("☁️ Pengaturan & Koneksi Google Sheets (Tanpa Google Cloud)", expanded=not gsheet_ready):
-        st.markdown(
-            """
-            **Cara termudah menghubungkan Google Sheets (1 menit, tanpa Google Cloud/JSON):**
-            1. Buka Google Sheet Anda → klik menu **Extensions (Ekstensi) → Apps Script**.
-            2. Hapus kode bawaan, lalu **salin-tempel** kode di bawah ini dan klik **Save**:
-            """
-        )
-        st.code(APPS_SCRIPT_TEMPLATE, language="javascript")
-        st.markdown(
-            """
-            3. Klik **Deploy → New deployment → Select type: Web app** → atur **Who has access: Anyone** → klik **Deploy** (izinkan akses saat diminta).
-            4. Salin **Web app URL** (`https://script.google.com/macros/s/.../exec`) lalu tempel di bawah ini (atau simpan permanen di **Streamlit Secrets** dengan kunci `apps_script_url = "..."`).
-            """
-        )
-        cfg_url = st.text_input(
-            "Web App URL (Apps Script) atau URL Google Sheet",
-            value=sheet_url or "",
-            placeholder="https://script.google.com/macros/s/.../exec",
-        )
-        cfg_file = st.file_uploader(
-            "Opsional: Upload file Service Account (.json) jika tidak pakai Apps Script",
-            type=["json"],
-        )
-
-        col_save, col_mig = st.columns(2)
-        if col_save.button("🔗 Simpan Konfigurasi Google Sheets", use_container_width=True):
-            if not cfg_url.strip():
-                st.warning("Masukkan Web App URL terlebih dahulu.")
-            else:
-                sa_bytes = cfg_file.read() if cfg_file is not None else None
-                save_local_config(sa_bytes, cfg_url.strip())
-                st.cache_data.clear()
-                st.success("Konfigurasi disimpan! Memuat ulang...")
-                st.rerun()
-
-        if col_mig.button(
-            "📤 Salin Data Saat Ini ke Google Sheet",
-            disabled=not gsheet_ready,
-            use_container_width=True,
-        ):
-            with st.spinner("Mengunggah tabel Penjualan & Menu ke Google Sheets..."):
-                try:
-                    simpan_tabel_gsheet(sa_info, sheet_url, df_sales, df_menu)
-                    st.cache_data.clear()
-                    st.success("Data Penjualan & Menu berhasil disalin ke Google Sheets!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Gagal migrasi ke Google Sheets: {e}")
-
-    st.divider()
-
     # Editor Tabel Penjualan & Menu
     st.subheader("🗂️ Tabel Data Penjualan & Menu")
     st.caption("Anda bisa mengedit langsung tabel di bawah ini, lalu simpan perubahan ke Google Sheets.")
@@ -690,7 +637,7 @@ with tab_data:
         df_menu, disabled=["Produk"], key="menu", use_container_width=True, hide_index=True
     )
 
-    if gsheet_ready and st.button("💾 Simpan Perubahan Tabel ke Google Sheet"):
+    if gsheet_ready and st.button("💾 Simpan Perubahan Tabel"):
         with st.spinner("Memperbarui Google Sheets..."):
             try:
                 clean_s = sales_in.dropna(subset=["Batch", "Minggu"]).copy()
