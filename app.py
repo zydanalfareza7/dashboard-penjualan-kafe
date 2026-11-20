@@ -72,8 +72,8 @@ def inject_custom_css():
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        /* Sembunyikan toolbar kanan atas (Fork/GitHub/Menu) agar tampilan lebih bersih */
-        [data-testid="stToolbar"], #MainMenu {
+        /* Sembunyikan tombol Fork/GitHub/Menu kanan atas agar tampilan lebih bersih */
+        [data-testid="stToolbarActions"], #MainMenu {
             visibility: hidden;
             height: 0;
         }
@@ -833,7 +833,11 @@ with tab_tren:
     with st.container(border=True):
         st.markdown(f'<div class="card-title">📈 Tren Mingguan — {METRIK[metrik]}</div>', unsafe_allow_html=True)
         st.markdown('<div class="card-sub">Pergerakan penjualan dari minggu ke minggu tiap produk</div>', unsafe_allow_html=True)
-        trend = f.groupby(["Periode", "Produk"], as_index=False)[metrik].sum()
+        trend = (
+            f.groupby(["Minggu ke", "Periode", "Produk"], as_index=False)[metrik]
+            .sum()
+            .sort_values("Minggu ke")
+        )
         fig = px.line(
             trend,
             x="Periode",
