@@ -568,6 +568,11 @@ with tab_data:
     sa_info, sheet_url = get_gsheet_config(st.secrets)
     gsheet_ready = bool(sheet_url and (is_apps_script_url(sheet_url) or sa_info))
 
+    if save_msg := st.session_state.pop("save_anim", None):
+        st.balloons()
+        st.toast(save_msg, icon="✅")
+        st.success(save_msg)
+
     st.subheader("➕ Input Data Penjualan Mingguan")
     if gsheet_ready:
         st.caption("Data yang diinput di bawah ini akan langsung tersimpan ke **Google Sheets** Anda.")
@@ -617,8 +622,8 @@ with tab_data:
                     )
                     simpan_tabel_gsheet(sa_info, sheet_url, updated_sales, df_menu)
                     st.cache_data.clear()
-                    st.success(
-                        f"Berhasil menyimpan **Batch {int(in_batch)} - Minggu {int(in_minggu)}** ke Google Sheets!"
+                    st.session_state["save_anim"] = (
+                        f"Berhasil menyimpan Batch {int(in_batch)} - Minggu {int(in_minggu)} ke Google Sheets!"
                     )
                     st.rerun()
                 except Exception as e:
@@ -644,7 +649,7 @@ with tab_data:
                 clean_s[PRODUK] = clean_s[PRODUK].fillna(0)
                 simpan_tabel_gsheet(sa_info, sheet_url, clean_s, menu_in.fillna(0))
                 st.cache_data.clear()
-                st.success("Semua perubahan tabel berhasil disimpan ke Google Sheets!")
+                st.session_state["save_anim"] = "Semua perubahan tabel berhasil disimpan ke Google Sheets!"
                 st.rerun()
             except Exception as e:
                 st.error(f"Gagal memperbarui Google Sheets: {e}")
