@@ -942,10 +942,18 @@ with tab_dl:
     if len(wide) < lag + 2:
         st.warning("Data belum cukup untuk jendela ini. Tambah data atau kecilkan jendela.")
     elif st.button("🚀 Latih model & prediksi", type="primary"):
-        with st.spinner("Melatih jaringan saraf..."):
+        with st.status("🧠 Melatih ensemble jaringan saraf...", expanded=True) as status:
             try:
+                st.write("Menyiapkan data deret waktu & normalisasi fitur...")
+                prog = st.progress(25)
+                st.write(f"Melatih {n_models} model MLP ({epochs} epoch) dengan TensorFlow/Keras...")
+                prog.progress(60)
                 st.session_state["dl"] = run_model(wide, lag, units, epochs, n_models, horizon)
+                prog.progress(100)
+                status.update(label="✅ Model selesai dilatih & prediksi siap!", state="complete", expanded=False)
+                st.toast("Prediksi Deep Learning berhasil diperbarui!", icon="🧠")
             except ImportError:
+                status.update(label="❌ TensorFlow belum terpasang", state="error")
                 st.error("TensorFlow belum terpasang. Jalankan: pip install tensorflow")
 
     res = st.session_state.get("dl")
@@ -1058,3 +1066,12 @@ with tab_data:
         "data_penjualan_long.csv",
         "text/csv",
     )
+
+st.markdown(
+    """
+    <div style="text-align:center; color:#8C7A6B; font-size:0.8rem; margin-top:2.5rem; padding-top:1rem; border-top:1px solid #EAE0D5;">
+        ☕ <b>Dashboard Analitik Penjualan Kafe</b> · Kelompok 04 · Powered by Streamlit &amp; TensorFlow/Keras
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
