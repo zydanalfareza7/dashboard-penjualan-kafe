@@ -657,7 +657,6 @@ with tab_data:
     gsheet_ready = bool(sheet_url and (is_apps_script_url(sheet_url) or sa_info))
 
     if save_msg := st.session_state.pop("save_anim", None):
-        st.balloons()
         st.toast(save_msg, icon="✅")
         st.success(save_msg)
 
