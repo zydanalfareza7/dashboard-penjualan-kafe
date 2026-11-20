@@ -11,6 +11,7 @@ Fitur:
 
 Jalankan:  streamlit run app.py
 """
+import io
 import re
 from pathlib import Path
 
@@ -1165,11 +1166,23 @@ with tab_dl:
         st.info("Atur parameter lalu klik **Latih model & prediksi**.")
 
 with tab_data:
+    excel_buf = io.BytesIO()
+    with pd.ExcelWriter(excel_buf, engine="openpyxl") as writer:
+        sales.drop(columns=["Minggu ke"], errors="ignore").to_excel(
+            writer, sheet_name="Penjualan", index=False
+        )
+        menu.to_excel(writer, sheet_name="Menu", index=False)
+        long.to_excel(writer, sheet_name="Detail_Lengkap", index=False)
+        for ws in writer.sheets.values():
+            for col in ws.columns:
+                max_len = max(len(str(cell.value or "")) for cell in col)
+                ws.column_dimensions[col[0].column_letter].width = max(max_len + 3, 10)
+
     st.download_button(
-        "⬇️ Unduh data (CSV)",
-        long.to_csv(index=False).encode(),
-        "data_penjualan_long.csv",
-        "text/csv",
+        "⬇️ Unduh Data (Excel .xlsx)",
+        excel_buf.getvalue(),
+        "data_penjualan_kafe.xlsx",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 st.markdown(
