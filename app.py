@@ -628,7 +628,7 @@ with tab_data:
 
     # Editor Tabel Penjualan & Menu
     st.subheader("🗂️ Tabel Data Penjualan & Menu")
-    st.caption("Anda bisa mengedit langsung tabel di bawah ini, lalu simpan perubahan ke Google Sheets.")
+    st.caption("Ringkasan data penjualan & daftar menu yang sedang aktif.")
     sales_in = st.data_editor(
         df_sales, num_rows="dynamic", key="sales", use_container_width=True, hide_index=True
     )
@@ -636,18 +636,6 @@ with tab_data:
     menu_in = st.data_editor(
         df_menu, disabled=["Produk"], key="menu", use_container_width=True, hide_index=True
     )
-
-    if gsheet_ready and st.button("💾 Simpan Perubahan Tabel"):
-        with st.spinner("Memperbarui Google Sheets..."):
-            try:
-                clean_s = sales_in.dropna(subset=["Batch", "Minggu"]).copy()
-                clean_s[PRODUK] = clean_s[PRODUK].fillna(0)
-                simpan_tabel_gsheet(sa_info, sheet_url, clean_s, menu_in.fillna(0))
-                st.cache_data.clear()
-                st.success("Semua perubahan tabel berhasil disimpan ke Google Sheets!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Gagal memperbarui Google Sheets: {e}")
 
 # ---- Olah Data -----------------------------------------------------------
 sales = sales_in.dropna(subset=["Batch", "Minggu"]).copy()
