@@ -84,6 +84,21 @@ def inject_custom_css():
             max-width: 1280px;
         }
 
+        /* Keyframes animasi halus */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.35); }
+            50% { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+        }
+
         /* White card containers in main area */
         section.main [data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #FFFFFF;
@@ -92,11 +107,18 @@ def inject_custom_css():
             padding: 1.15rem 1.25rem !important;
             box-shadow: 0 4px 18px rgba(44, 30, 22, 0.04);
             margin-bottom: 0.75rem;
+            animation: fadeSlideUp 0.45s ease-out both;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        section.main [data-testid="stVerticalBlockBorderWrapper"]:hover {
+            box-shadow: 0 8px 24px rgba(44, 30, 22, 0.07);
         }
 
         /* Hero header */
         .hero-card {
-            background: linear-gradient(135deg, #2D1B14 0%, #5C3D2E 52%, #9C6B43 100%);
+            background: linear-gradient(135deg, #2D1B14 0%, #5C3D2E 48%, #9C6B43 85%, #4A2C20 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 10s ease infinite, fadeSlideUp 0.4s ease-out both;
             padding: 1.75rem 2.1rem;
             border-radius: 18px;
             color: #FFFDF9;
@@ -143,6 +165,7 @@ def inject_custom_css():
             background: rgba(34, 197, 94, 0.22);
             border: 1px solid rgba(134, 239, 172, 0.5);
             color: #ECFDF5;
+            animation: pulseGlow 2.4s ease-in-out infinite;
         }
         .status-excel {
             background: rgba(251, 191, 36, 0.2);
@@ -168,11 +191,31 @@ def inject_custom_css():
             box-shadow: 0 4px 16px rgba(44, 30, 22, 0.045);
             position: relative;
             overflow: hidden;
-            transition: transform 0.16s ease, box-shadow 0.16s ease;
+            animation: fadeSlideUp 0.45s ease-out both;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
         }
+        .kpi-card:nth-child(1) { animation-delay: 0.04s; }
+        .kpi-card:nth-child(2) { animation-delay: 0.10s; }
+        .kpi-card:nth-child(3) { animation-delay: 0.16s; }
+        .kpi-card:nth-child(4) { animation-delay: 0.22s; }
         .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(44, 30, 22, 0.08);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 24px rgba(44, 30, 22, 0.09);
+        }
+
+        /* Hover & press animasi pada tombol dan tab */
+        .stButton > button, .stFormSubmitButton > button {
+            transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+        }
+        .stButton > button:hover, .stFormSubmitButton > button:hover {
+            transform: translateY(-1.5px);
+            box-shadow: 0 4px 12px rgba(111, 78, 55, 0.22);
+        }
+        .stButton > button:active, .stFormSubmitButton > button:active {
+            transform: scale(0.98);
+        }
+        .stTabs [data-baseweb="tab"] {
+            transition: background-color 0.18s ease, color 0.18s ease, transform 0.15s ease;
         }
         .kpi-card::before {
             content: "";
