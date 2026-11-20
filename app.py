@@ -62,54 +62,78 @@ def inject_custom_css():
     st.markdown(
         """
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        html, body, [class*="css"] {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
         /* Sembunyikan toolbar kanan atas (Fork/GitHub/Menu) agar tampilan lebih bersih */
         [data-testid="stToolbar"], #MainMenu {
             visibility: hidden;
             height: 0;
         }
 
+        .block-container {
+            padding-top: 1.6rem !important;
+            padding-bottom: 2.5rem !important;
+            max-width: 1280px;
+        }
+
+        /* White card containers in main area */
+        section.main [data-testid="stVerticalBlockBorderWrapper"] {
+            background-color: #FFFFFF;
+            border: 1px solid #EAE0D5 !important;
+            border-radius: 16px !important;
+            padding: 1.15rem 1.25rem !important;
+            box-shadow: 0 4px 18px rgba(44, 30, 22, 0.04);
+            margin-bottom: 0.75rem;
+        }
+
         /* Hero header */
         .hero-card {
-            background: linear-gradient(135deg, #3E2723 0%, #6F4E37 55%, #A67B5B 100%);
-            padding: 1.5rem 2rem;
-            border-radius: 16px;
+            background: linear-gradient(135deg, #2D1B14 0%, #5C3D2E 52%, #9C6B43 100%);
+            padding: 1.75rem 2.1rem;
+            border-radius: 18px;
             color: #FFFDF9;
-            margin-bottom: 1.25rem;
-            box-shadow: 0 8px 24px rgba(62, 39, 35, 0.14);
+            margin-bottom: 1.35rem;
+            box-shadow: 0 12px 30px rgba(45, 27, 20, 0.16);
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .hero-badge {
             display: inline-block;
-            background: rgba(255, 255, 255, 0.18);
-            border: 1px solid rgba(255, 255, 255, 0.28);
-            padding: 0.2rem 0.7rem;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            padding: 0.25rem 0.8rem;
             border-radius: 999px;
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             font-weight: 700;
             letter-spacing: 0.06em;
-            margin-bottom: 0.45rem;
+            margin-bottom: 0.5rem;
         }
         .hero-title {
-            font-size: 1.75rem;
+            font-size: 1.85rem;
             font-weight: 800;
             margin: 0;
             line-height: 1.2;
+            letter-spacing: -0.02em;
         }
         .hero-sub {
             font-size: 0.92rem;
-            opacity: 0.88;
-            margin-top: 0.35rem;
+            opacity: 0.86;
+            margin-top: 0.4rem;
         }
         .status-pill {
-            padding: 0.45rem 0.95rem;
+            padding: 0.5rem 1.05rem;
             border-radius: 999px;
             font-size: 0.82rem;
             font-weight: 600;
-            backdrop-filter: blur(6px);
+            backdrop-filter: blur(8px);
         }
         .status-gsheet {
             background: rgba(34, 197, 94, 0.22);
@@ -117,8 +141,8 @@ def inject_custom_css():
             color: #ECFDF5;
         }
         .status-excel {
-            background: rgba(251, 191, 36, 0.22);
-            border: 1px solid rgba(253, 224, 71, 0.5);
+            background: rgba(251, 191, 36, 0.2);
+            border: 1px solid rgba(253, 224, 71, 0.45);
             color: #FEFCE8;
         }
 
@@ -134,45 +158,62 @@ def inject_custom_css():
         }
         .kpi-card {
             background: #FFFFFF;
-            border: 1px solid #E6DCD1;
-            border-radius: 14px;
-            padding: 1.05rem 1.2rem;
-            box-shadow: 0 3px 12px rgba(44, 30, 22, 0.05);
+            border: 1px solid #EAE0D5;
+            border-radius: 16px;
+            padding: 1.15rem 1.25rem;
+            box-shadow: 0 4px 16px rgba(44, 30, 22, 0.045);
             position: relative;
             overflow: hidden;
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(44, 30, 22, 0.08);
         }
         .kpi-card::before {
             content: "";
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #6F4E37, #C68B59);
+            background: linear-gradient(90deg, #6F4E37, #D49A6A);
         }
         .kpi-label {
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: 700;
             color: #7A685C;
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.4rem;
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.45rem;
         }
         .kpi-value {
-            font-size: 1.55rem;
+            font-size: 1.6rem;
             font-weight: 800;
             color: #2C1E16;
             line-height: 1.2;
+            letter-spacing: -0.02em;
         }
         .kpi-sub {
-            font-size: 0.74rem;
+            font-size: 0.75rem;
             color: #9A877A;
-            margin-top: 0.25rem;
+            margin-top: 0.3rem;
+        }
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #2C1E16;
+            margin-bottom: 0.15rem;
+        }
+        .card-sub {
+            font-size: 0.82rem;
+            color: #7A685C;
+            margin-bottom: 0.75rem;
         }
 
         /* Metric cards (untuk tab Deep Learning) */
         [data-testid="stMetric"] {
             background-color: #FFFFFF;
-            border: 1px solid #E6DCD1;
+            border: 1px solid #EAE0D5;
             padding: 1rem 1.15rem;
             border-radius: 14px;
             box-shadow: 0 2px 10px rgba(44, 30, 22, 0.04);
@@ -192,13 +233,14 @@ def inject_custom_css():
         .stTabs [data-baseweb="tab-list"] {
             gap: 0.35rem;
             background-color: #EFE8DF;
-            padding: 0.35rem;
-            border-radius: 12px;
+            padding: 0.38rem;
+            border-radius: 14px;
             border: 1px solid #E5D9CC;
+            margin-bottom: 0.5rem;
         }
         .stTabs [data-baseweb="tab"] {
-            border-radius: 9px;
-            padding: 0.5rem 1.05rem;
+            border-radius: 10px;
+            padding: 0.52rem 1.1rem;
             font-weight: 600;
             color: #5C493E;
         }
@@ -216,8 +258,8 @@ def inject_custom_css():
         [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #FFFFFF;
             border: 1px solid #E6DCD1 !important;
-            border-radius: 12px !important;
-            padding: 0.25rem 0.35rem !important;
+            border-radius: 14px !important;
+            padding: 0.35rem 0.45rem !important;
             box-shadow: 0 2px 8px rgba(44, 30, 22, 0.03);
         }
         .sidebar-title {
@@ -764,97 +806,149 @@ with tab_ringkas:
     st.markdown("")
     col_left, col_right = st.columns(2)
     with col_left:
-        st.subheader("Agregasi per Batch")
-        agg = f.groupby("Batch")[["Qty", "Omzet", "Laba"]].sum().reset_index()
-        st.dataframe(
-            agg.style.format({"Omzet": rp, "Laba": rp}),
-            use_container_width=True,
-            hide_index=True,
-        )
+        with st.container(border=True):
+            st.markdown('<div class="card-title">📦 Agregasi per Batch</div>', unsafe_allow_html=True)
+            st.markdown('<div class="card-sub">Ringkasan total cup, omzet, dan laba setiap batch</div>', unsafe_allow_html=True)
+            agg = f.groupby("Batch")[["Qty", "Omzet", "Laba"]].sum().reset_index()
+            st.dataframe(
+                agg.style.format({"Omzet": rp, "Laba": rp}),
+                use_container_width=True,
+                hide_index=True,
+            )
     with col_right:
-        st.subheader("Agregasi per Produk")
-        aggp = (
-            f.groupby("Produk")[["Qty", "Omzet", "Laba"]]
-            .sum()
-            .sort_values("Qty", ascending=False)
-            .reset_index()
+        with st.container(border=True):
+            st.markdown('<div class="card-title">🥤 Agregasi per Produk</div>', unsafe_allow_html=True)
+            st.markdown('<div class="card-sub">Performa penjualan diurutkan dari yang terlaris</div>', unsafe_allow_html=True)
+            aggp = (
+                f.groupby("Produk")[["Qty", "Omzet", "Laba"]]
+                .sum()
+                .sort_values("Qty", ascending=False)
+                .reset_index()
+            )
+            st.dataframe(
+                aggp.style.format({"Omzet": rp, "Laba": rp}),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+    with st.container(border=True):
+        st.markdown(f'<div class="card-title">📊 Peringkat Produk ({METRIK[metrik]})</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-sub">Perbandingan cepat kontribusi masing-masing menu</div>', unsafe_allow_html=True)
+        bar_rank = aggp.sort_values(metrik, ascending=True)
+        fig_rank = px.bar(
+            bar_rank,
+            x=metrik,
+            y="Produk",
+            orientation="h",
+            color="Produk",
+            color_discrete_sequence=COFFEE_PALETTE,
+            text_auto=True,
+            template="plotly_white",
         )
-        st.dataframe(
-            aggp.style.format({"Omzet": rp, "Laba": rp}),
-            use_container_width=True,
-            hide_index=True,
+        fig_rank.update_layout(
+            showlegend=False,
+            height=260,
+            margin=dict(l=10, r=20, t=10, b=10),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(gridcolor="#F0E9E0", title=""),
+            yaxis=dict(title=""),
         )
+        st.plotly_chart(fig_rank, use_container_width=True)
 
 # ---- Tren ----------------------------------------------------------------
 with tab_tren:
-    st.subheader(f"Tren Mingguan - {METRIK[metrik]}")
-    trend = f.groupby(["Periode", "Produk"], as_index=False)[metrik].sum()
-    fig = px.line(
-        trend,
-        x="Periode",
-        y=metrik,
-        color="Produk",
-        markers=True,
-        category_orders={"Periode": periode_order},
-        color_discrete_sequence=COFFEE_PALETTE,
-        template="plotly_white",
-    )
-    fig.update_layout(
-        hovermode="x unified",
-        legend_title_text="",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    with st.container(border=True):
+        st.markdown(f'<div class="card-title">📈 Tren Mingguan — {METRIK[metrik]}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-sub">Pergerakan penjualan dari minggu ke minggu tiap produk</div>', unsafe_allow_html=True)
+        trend = f.groupby(["Periode", "Produk"], as_index=False)[metrik].sum()
+        fig = px.line(
+            trend,
+            x="Periode",
+            y=metrik,
+            color="Produk",
+            markers=True,
+            line_shape="spline",
+            category_orders={"Periode": periode_order},
+            color_discrete_sequence=COFFEE_PALETTE,
+            template="plotly_white",
+        )
+        fig.update_traces(line=dict(width=3), marker=dict(size=7))
+        fig.update_layout(
+            hovermode="x unified",
+            legend_title_text="",
+            margin=dict(l=10, r=10, t=15, b=10),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            yaxis=dict(gridcolor="#F0E9E0"),
+            xaxis=dict(showgrid=False),
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader(f"Perbandingan Antar Batch - {METRIK[metrik]}")
-    bb = f.groupby(["Batch", "Produk"], as_index=False)[metrik].sum()
-    bb["Batch"] = "Batch " + bb["Batch"].astype(str)
-    fig2 = px.bar(
-        bb,
-        x="Batch",
-        y=metrik,
-        color="Produk",
-        barmode="group",
-        color_discrete_sequence=COFFEE_PALETTE,
-        template="plotly_white",
-        text_auto=True,
-    )
-    fig2.update_layout(
-        legend_title_text="",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-    )
-    st.plotly_chart(fig2, use_container_width=True)
+    with st.container(border=True):
+        st.markdown(f'<div class="card-title">📊 Perbandingan Antar Batch — {METRIK[metrik]}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-sub">Performa masing-masing produk di setiap batch</div>', unsafe_allow_html=True)
+        bb = f.groupby(["Batch", "Produk"], as_index=False)[metrik].sum()
+        bb["Batch"] = "Batch " + bb["Batch"].astype(str)
+        fig2 = px.bar(
+            bb,
+            x="Batch",
+            y=metrik,
+            color="Produk",
+            barmode="group",
+            color_discrete_sequence=COFFEE_PALETTE,
+            template="plotly_white",
+            text_auto=True,
+        )
+        fig2.update_layout(
+            legend_title_text="",
+            margin=dict(l=10, r=10, t=15, b=10),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            yaxis=dict(gridcolor="#F0E9E0"),
+        )
+        st.plotly_chart(fig2, use_container_width=True)
 
 # ---- Komposisi -----------------------------------------------------------
 with tab_komposisi:
     col_a, col_b = st.columns(2)
     with col_a:
-        st.subheader(f"Kontribusi Produk - {metrik}")
-        share = f.groupby("Produk", as_index=False)[metrik].sum()
-        figp = px.pie(
-            share,
-            names="Produk",
-            values=metrik,
-            hole=0.52,
-            color_discrete_sequence=COFFEE_PALETTE,
-            template="plotly_white",
-        )
-        figp.update_layout(paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(figp, use_container_width=True)
+        with st.container(border=True):
+            st.markdown(f'<div class="card-title">🍩 Kontribusi Produk — {METRIK[metrik]}</div>', unsafe_allow_html=True)
+            st.markdown('<div class="card-sub">Persentase porsi penjualan per menu</div>', unsafe_allow_html=True)
+            share = f.groupby("Produk", as_index=False)[metrik].sum()
+            figp = px.pie(
+                share,
+                names="Produk",
+                values=metrik,
+                hole=0.55,
+                color_discrete_sequence=COFFEE_PALETTE,
+                template="plotly_white",
+            )
+            figp.update_traces(textposition="inside", textinfo="percent+label")
+            figp.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=10, r=10, t=15, b=10),
+                showlegend=False,
+            )
+            st.plotly_chart(figp, use_container_width=True)
     with col_b:
-        st.subheader("Heatmap Qty (Periode × Produk)")
-        pv = f.pivot_table(index="Periode", columns="Produk", values="Qty", aggfunc="sum")
-        pv = pv.reindex([p for p in periode_order if p in pv.index])
-        figh = px.imshow(
-            pv,
-            text_auto=True,
-            aspect="auto",
-            color_continuous_scale=["#FAF3E8", "#C68B59", "#6F4E37"],
-        )
-        figh.update_layout(paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(figh, use_container_width=True)
+        with st.container(border=True):
+            st.markdown('<div class="card-title">🔥 Heatmap Qty (Periode × Produk)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="card-sub">Intensitas jumlah cup terjual di tiap periode</div>', unsafe_allow_html=True)
+            pv = f.pivot_table(index="Periode", columns="Produk", values="Qty", aggfunc="sum")
+            pv = pv.reindex([p for p in periode_order if p in pv.index])
+            figh = px.imshow(
+                pv,
+                text_auto=True,
+                aspect="auto",
+                color_continuous_scale=["#FAF3E8", "#C68B59", "#6F4E37"],
+            )
+            figh.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=10, r=10, t=15, b=10),
+            )
+            st.plotly_chart(figh, use_container_width=True)
 
 # ---- Deep Learning -------------------------------------------------------
 with tab_dl:
