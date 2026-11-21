@@ -13,6 +13,9 @@ Jalankan:  streamlit run app.py
 """
 import io
 import re
+import threading
+import time
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -762,6 +765,39 @@ long["Laba"] = long["Qty"] * (long["Harga Jual"] - long["HPP"])
 long["Periode"] = "B" + long["Batch"].astype(str) + "-M" + long["Minggu"].astype(str)
 periode_order = list(sales["Batch"].astype(str).radd("B") + "-M" + sales["Minggu"].astype(str))
 
+@st.cache_resource
+def _visitor_store():
+    """Penyimpanan sesi pengunjung aktif di memori server."""
+    return {"visitors": {}, "lock": threading.Lock()}
+
+
+def update_dan_hitung_online(visitor_id: str, ttl_detik: int = 120) -> int:
+    """Catat heartbeat pengunjung saat ini dan kembalikan jumlah yang sedang aktif."""
+    store = _visitor_store()
+    now = time.time()
+    with store["lock"]:
+        store["visitors"][visitor_id] = now
+        expired = [vid for vid, ts in store["visitors"].items() if now - ts > ttl_detik]
+        for vid in expired:
+            del store["visitors"][vid]
+        return len(store["visitors"])
+
+
+@st.fragment(run_every="30s")
+def render_live_online_badge():
+    if "visitor_id" not in st.session_state:
+        st.session_state["visitor_id"] = uuid.uuid4().hex
+    n_online = update_dan_hitung_online(st.session_state["visitor_id"])
+    st.markdown(
+        f"""
+        <div class="sidebar-summary" style="margin-top:0.45rem;">
+            🟢 <b>{n_online}</b> Sedang Online
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # ---- Sidebar Filter ------------------------------------------------------
 all_batches = sorted(long["Batch"].unique())
 with st.sidebar:
@@ -834,6 +870,7 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
+    render_live_online_badge()
 
 f = long[long["Batch"].isin(batch_sel) & long["Produk"].isin(produk_sel)]
 if f.empty:
